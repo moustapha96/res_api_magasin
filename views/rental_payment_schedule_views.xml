@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- PAYMENT SCHEDULE -->
+    <record id="view_rental_payment_schedule_tree" model="ir.ui.view">
+        <field name="name">rental.payment.schedule.tree</field>
+        <field name="model">rental.payment.schedule</field>
+        <field name="arch" type="xml">
+            <tree default_order="due_date asc">
+                <field name="contract_id" />
+                <field name="due_date" />
+                <field name="amount" />
+                <field name="state" />
+                <field name="invoice_id" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_rental_payment_schedule_form" model="ir.ui.view">
+        <field name="name">rental.payment.schedule.form</field>
+        <field name="model">rental.payment.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Échéance">
+                <sheet>
+                    <group>
+                        <field name="contract_id" />
+                        <field name="due_date" />
+                        <field name="amount" />
+                        <field name="state" />
+                        <field name="invoice_id" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_rental_payment_schedule_search" model="ir.ui.view">
+        <field name="name">rental.payment.schedule.search</field>
+        <field name="model">rental.payment.schedule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="contract_id" />
+                <field name="state" />
+                <filter name="pending" string="En attente" domain="[('state','=','pending')]" />
+                <group expand="0" string="Group By">
+                    <filter name="grp_contract" string="Contrat"
+                        context="{'group_by':'contract_id'}" />
+                    <filter name="grp_state" string="Statut" context="{'group_by':'state'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rental_payment_schedule" model="ir.actions.act_window">
+        <field name="name">Échéancier</field>
+        <field name="res_model">rental.payment.schedule</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_rental_payment_schedule_search" />
+    </record>
+</odoo>

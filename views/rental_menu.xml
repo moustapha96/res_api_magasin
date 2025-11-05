@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Menu racine Location (sous Comptabilité ou Contacts au choix) -->
+  <menuitem id="menu_rental_root" name="Gestion CCTS" sequence="65"/>
+
+  <menuitem id="menu_rental_buildings" name="Immeubles" parent="menu_rental_root" action="action_rental_building" sequence="10"/>
+  <menuitem id="menu_rental_properties" name="Locaux" parent="menu_rental_root" action="action_rental_property" sequence="20"/>
+  <menuitem id="menu_rental_contracts" name="Contrats" parent="menu_rental_root" action="action_rental_contract" sequence="30"/>
+  <menuitem id="menu_rental_schedules" name="Échéancier" parent="menu_rental_root" action="action_rental_payment_schedule" sequence="40"/>
+</odoo>

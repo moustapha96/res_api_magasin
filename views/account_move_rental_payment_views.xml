@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- FORM : bloc Paiement en ligne (après les lignes de facture) -->
+    <record id="view_move_form_inherit_rental_payment" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.rental.payment</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_line_ids']" position="after">
+                <group string="Paiement en ligne"
+                    attrs="{'invisible': [('move_type','!=','out_invoice')]}">
+
+                    <field name="transaction_id" readonly="1" />
+                    
+                    <field name="payment_link" readonly="1" widget="url" />
+
+                    <field name="payment_link_wave" readonly="1" widget="url" />
+
+                    <field name="payment_link_orange_money" readonly="1" widget="url" />
+
+                    <!-- Si tu gardes les liens avec le modèle Rental -->
+                    <field name="rental_contract_id"
+                        attrs="{'invisible': [('move_type','!=','out_invoice')]}" />
+
+                    <field name="rental_property_id"
+                        attrs="{'invisible': [('move_type','!=','out_invoice')]}" />
+
+                    <button name="action_generate_payment_link"
+                        string="Générer le lien de paiement"
+                        type="object"
+                        class="oe_highlight"
+                    />
+
+                    <button
+                        name="send_payment_link_sms_with_details"
+                        string="Envoyer le lien par SMS"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('payment_link','=',False)]}" />
+
+                    <button
+                        name="generate_wave_payment_link"
+                        string="Générer le lien Wave"
+                        type="object"
+                        class="oe_highlight"
+                        attrs="{'invisible': [('payment_state','=','paid'), ('move_type','!=','out_invoice')]}" />
+
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- TREE : affiche la colonne Lien de paiement et tri Desc -->
+    <record id="view_move_tree_inherit_rental_payment" model="ir.ui.view">
+        <field name="name">account.move.tree.inherit.rental.payment</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="default_order">id desc</attribute>
+            </xpath>
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="payment_link" string="Lien de paiement" widget="url" />
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- CONTRACT -->
+    <record id="view_rental_contract_tree" model="ir.ui.view">
+        <field name="name">rental.contract.tree</field>
+        <field name="model">rental.contract</field>
+        <field name="arch" type="xml">
+            <tree default_order="start_date desc">
+                <field name="name" />
+                <field name="tenant_id" />
+                <field name="property_id" />
+                <field name="start_date" />
+                <field name="end_date" />
+                <field name="state" />
+                <field name="monthly_rent" />
+                <field name="unpaid_invoice_count" />
+                <field name="total_unpaid" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_rental_contract_form" model="ir.ui.view">
+        <field name="name">rental.contract.form</field>
+        <field name="model">rental.contract</field>
+        <field name="arch" type="xml">
+            <form string="Contrat de Location">
+                <header>
+                    <button name="action_confirm" type="object" class="oe_highlight"
+                        string="Confirmer" attrs="{'invisible': [('state','!=','draft')]}" />
+                   
+                        <button name="action_expire" type="object" string="Marquer expiré"
+                        attrs="{'invisible': [('state','!=','active')]}" />
+                  
+                        <button name="action_terminate" type="object" string="Résilier"
+                        attrs="{'invisible': [('state','!=','active')]}" />
+                    
+                        <!-- <button name="_generate_payment_schedule" type="object"
+                        string="Régénérer échéancier" /> -->
+
+                    <!-- <button name="_generate_next_invoice" type="object"
+                        string="Générer prochaine facture" /> -->
+
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,active,expired,terminated" />
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Général">
+                            <field name="name" readonly="1" />
+                            <field name="tenant_id" required="1" />
+                            <field name="property_id" required="1" />
+                            <field name="start_date" required="1" />
+                            <field name="end_date" />
+                            <field name="duration_months" readonly="1" />
+                        </group>
+                        <group string="Conditions">
+                            <field name="monthly_rent" required="1" />
+                            <field name="payment_frequency" />
+                            <field name="payment_day" />
+                            <field name="deposit_amount" />
+                            <field name="deposit_paid" />
+                            <field name="auto_generate_invoices" />
+                            <field name="auto_send_invoices" />
+                            <field name="send_sms" />
+                            <field name="send_whatsapp" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Échéancier">
+                            <field name="payment_schedule_ids"
+                                context="{'default_contract_id': active_id}">
+                                <tree editable="bottom">
+                                    <field name="due_date" />
+                                    <field name="amount" />
+                                    <field name="state" />
+                                    <field name="invoice_id" />
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Factures">
+                            <field name="invoice_ids" domain="[('move_type','=','out_invoice')]"
+                                context="{'default_rental_contract_id': active_id}">
+                                <tree>
+                                    <field name="name" />
+                                    <field name="invoice_date" />
+                                    <field name="invoice_date_due" />
+                                    <field name="amount_total" />
+                                    <field name="payment_state" />
+                                </tree>
+                            </field>
+                        </page>
+
+                        <page string="Notes et Société">
+                            <group>
+                                <field name="note" />
+                            </group>
+                            <group>
+                                <field name="company_id" />
+                                <field name="currency_id" readonly="1" />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_rental_contract_search" model="ir.ui.view">
+        <field name="name">rental.contract.search</field>
+        <field name="model">rental.contract</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" />
+                <field name="tenant_id" />
+                <field name="property_id" />
+                <field name="state" />
+                <filter name="active_state" string="Actifs" domain="[('state','=','active')]" />
+                <filter name="draft_state" string="Brouillons" domain="[('state','=','draft')]" />
+                <group expand="0" string="Group By">
+                    <filter name="grp_tenant" string="Locataire" context="{'group_by':'tenant_id'}" />
+                    <filter name="grp_property" string="Local" context="{'group_by':'property_id'}" />
+                    <filter name="grp_state" string="Statut" context="{'group_by':'state'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rental_contract" model="ir.actions.act_window">
+        <field name="name">Contrats</field>
+        <field name="res_model">rental.contract</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_rental_contract_search" />
+    </record>
+</odoo>

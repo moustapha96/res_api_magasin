@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- BUILDING -->
+  <record id="view_rental_building_tree" model="ir.ui.view">
+    <field name="name">rental.building.tree</field>
+    <field name="model">rental.building</field>
+    <field name="arch" type="xml">
+      <tree string="Immeubles" default_order="name asc">
+        <field name="name"/>
+        <field name="code"/>
+        <field name="city"/>
+        <field name="total_floors"/>
+        <field name="property_count"/>
+        <field name="rented_property_count"/>
+        <field name="available_property_count"/>
+        <field name="occupancy_rate"/>
+        <field name="total_monthly_rent"/>
+        <field name="total_unpaid"/>
+        <field name="active"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="view_rental_building_form" model="ir.ui.view">
+    <field name="name">rental.building.form</field>
+    <field name="model">rental.building</field>
+    <field name="arch" type="xml">
+      <form string="Immeuble">
+        <sheet>
+          <div class="oe_button_box" name="button_box">
+            <button name="action_view_properties" type="object" class="oe_stat_button" icon="fa-home" string="Locaux">
+              <field name="property_count" widget="statinfo"/>
+            </button>
+            <button name="action_view_contracts" type="object" class="oe_stat_button" icon="fa-file-text-o" string="Contrats"/>
+            <button name="action_view_invoices" type="object" class="oe_stat_button" icon="fa-file-o" string="Factures"/>
+          </div>
+          <group>
+            <group string="Identification">
+              <field name="name" required="1"/>
+              <field name="code"/>
+              <field name="image_1920" widget="image"/>
+              <field name="active"/>
+            </group>
+            <group string="Adresse">
+              <field name="street"/>
+              <field name="street2"/>
+              <field name="city"/>
+              <field name="state_id"/>
+              <field name="zip"/>
+              <field name="country_id"/>
+            </group>
+          </group>
+
+          <group>
+            <group string="Infos bâtiment">
+              <field name="construction_year"/>
+              <field name="total_floors"/>
+              <field name="total_surface" readonly="1"/>
+            </group>
+            <group string="Gestion">
+              <field name="manager_id"/>
+              <field name="owner_id"/>
+              <field name="company_id"/>
+              <field name="currency_id" readonly="1"/>
+            </group>
+          </group>
+
+          <notebook>
+            <page string="Statistiques">
+              <group>
+                <field name="property_count" readonly="1"/>
+                <field name="available_property_count" readonly="1"/>
+                <field name="rented_property_count" readonly="1"/>
+                <field name="occupancy_rate" readonly="1"/>
+              </group>
+              <group>
+                <field name="total_monthly_rent" readonly="1"/>
+                <field name="total_unpaid" readonly="1"/>
+              </group>
+            </page>
+
+            <page string="Locaux">
+              <field name="property_ids" context="{'default_building_id': active_id}">
+                <tree editable="bottom">
+                  <field name="name"/>
+                  <field name="property_type"/>
+                  <field name="surface_area"/>
+                  <field name="floor"/>
+                  <field name="status"/>
+                  <field name="monthly_rent"/>
+                </tree>
+              </field>
+            </page>
+
+            <page string="Notes">
+              <group>
+                <field name="description" placeholder="Description publique"/>
+                <field name="note" placeholder="Notes internes"/>
+              </group>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="view_rental_building_search" model="ir.ui.view">
+    <field name="name">rental.building.search</field>
+    <field name="model">rental.building</field>
+    <field name="arch" type="xml">
+      <search string="Rechercher un immeuble">
+        <field name="name"/>
+        <field name="code"/>
+        <field name="city"/>
+        <filter name="active" string="Actifs" domain="[('active','=',True)]"/>
+        <filter name="archived" string="Archivés" domain="[('active','=',False)]"/>
+        <group expand="0" string="Group By">
+          <filter name="grp_city" string="Ville" context="{'group_by':'city'}"/>
+          <filter name="grp_manager" string="Gestionnaire" context="{'group_by':'manager_id'}"/>
+        </group>
+      </search>
+    </field>
+  </record>
+
+  <record id="action_rental_building" model="ir.actions.act_window">
+    <field name="name">Immeubles</field>
+    <field name="res_model">rental.building</field>
+    <field name="view_mode">tree,form</field>
+    <field name="search_view_id" ref="view_rental_building_search"/>
+  </record>
+</odoo>

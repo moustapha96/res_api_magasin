@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Action -->
+    <record id="action_gestion_magasin_config" model="ir.actions.act_window">
+        <field name="name">Configuration Paiement (Front)</field>
+        <field name="res_model">gestion.magasin.config</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p>Définissez l’URL publique vers laquelle vos factures redirigent pour le paiement.</p>
+        </field>
+    </record>
+
+    <!-- Menu Configuration sous le menu Rental existant -->
+    <menuitem id="menu_rental_config_root"
+        name="Configuration"
+        parent="menu_rental_root"
+        sequence="90" />
+
+    <menuitem id="menu_gestion_magasin_config"
+        name="Paiement (Front)"
+        parent="menu_rental_config_root"
+        action="action_gestion_magasin_config"
+        sequence="10" />
+
+    <!-- Tree -->
+    <record id="view_gestion_magasin_config_tree" model="ir.ui.view">
+        <field name="name">gestion.magasin.config.tree</field>
+        <field name="model">gestion.magasin.config</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" />
+                <field name="frontend_url" />
+                <field name="active" />
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form -->
+    <record id="view_gestion_magasin_config_form" model="ir.ui.view">
+        <field name="name">gestion.magasin.config.form</field>
+        <field name="model">gestion.magasin.config</field>
+        <field name="arch" type="xml">
+            <form string="Configuration Paiement (Front)">
+                <sheet>
+                    <group>
+                        <field name="name" />
+                        <field name="frontend_url"
+                            placeholder="https://app.mondomaine.com/facture-rental" />
+                        <field name="active" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- PROPERTY -->
+    <record id="view_rental_property_tree" model="ir.ui.view">
+        <field name="name">rental.property.tree</field>
+        <field name="model">rental.property</field>
+        <field name="arch" type="xml">
+            <tree default_order="name asc">
+                <field name="name" />
+                <field name="building_id" />
+                <field name="property_type" />
+                <field name="surface_area" />
+                <field name="floor" />
+                <field name="status" />
+                <field name="monthly_rent" />
+                <field name="total_unpaid_invoices" />
+                <field name="active" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_rental_property_form" model="ir.ui.view">
+        <field name="name">rental.property.form</field>
+        <field name="model">rental.property</field>
+        <field name="arch" type="xml">
+            <form string="Local">
+                <header>
+                    <button name="action_view_contracts" type="object" string="Contrats" />
+                    <button name="action_view_invoices" type="object" string="Factures" />
+                    <field name="active" widget="boolean_toggle" nolabel="1" />
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Identification">
+                            <field name="name" required="1" />
+                            <field name="building_id" />
+                            <field name="property_type" />
+                            <field name="status" />
+                            <field name="current_tenant_id" readonly="1" />
+                            <field name="current_contract_id" readonly="1" />
+                        </group>
+                        <group string="Caractéristiques">
+                            <field name="surface_area" />
+                            <field name="floor" />
+                            <field name="monthly_rent" />
+                            <field name="currency_id" readonly="1" />
+                        </group>
+                    </group>
+
+                    <group>
+                        <group>
+                            <field name="address" />
+                        </group>
+                        <group>
+                            <field name="note" />
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Contrats">
+                            <field name="contract_ids" context="{'default_property_id': active_id}">
+                                <tree>
+                                    <field name="name" />
+                                    <field name="tenant_id" />
+                                    <field name="start_date" />
+                                    <field name="end_date" />
+                                    <field name="state" />
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Impayés">
+                            <group>
+                                <field name="total_unpaid_invoices" readonly="1" />
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_rental_property_search" model="ir.ui.view">
+        <field name="name">rental.property.search</field>
+        <field name="model">rental.property</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" />
+                <field name="building_id" />
+                <field name="property_type" />
+                <field name="status" />
+                <filter name="available" string="Disponibles" domain="[('status','=','available')]" />
+                <filter name="rented" string="Loués" domain="[('status','=','rented')]" />
+                <group expand="0" string="Group By">
+                    <filter name="grp_building" string="Immeuble"
+                        context="{'group_by':'building_id'}" />
+                    <filter name="grp_type" string="Type" context="{'group_by':'property_type'}" />
+                    <filter name="grp_status" string="Statut" context="{'group_by':'status'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_rental_property" model="ir.actions.act_window">
+        <field name="name">Locaux</field>
+        <field name="res_model">rental.property</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_rental_property_search" />
+    </record>
+</odoo>

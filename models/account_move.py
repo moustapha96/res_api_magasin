@@ -294,7 +294,7 @@ class AccountMove(models.Model):
         payload = {
             "amount": int(self.amount_residual),  # Montant restant à payer
             "currency": self.currency_id.name,    # Devise de la facture
-            "success_url": f"https://www.ccbmshop.com/wave-paiement?transaction={self.transaction_id}",
+            "success_url": f"https://portail.toubasandaga.sn/wave-paiement?transaction={self.transaction_id}",
             "error_url": config.callback_url,
         }
 

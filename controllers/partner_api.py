@@ -473,6 +473,7 @@ class GestionPartner(http.Controller):
             return _json_message("Impossible d'envoyer le code OTP", 500)
         return _json_message("Code OTP renvoyé avec succès", 200)
 
+    
     @http.route('/api/partner/otp-verification', methods=['POST'], type='http', auth='none', cors="*", csrf=False)
     def api_partner_otp_verify(self, **kw):
         _require_admin_env()
@@ -480,17 +481,25 @@ class GestionPartner(http.Controller):
         if data is None:
             return _json_message("Données invalides", 400)
 
-        otp_code = data.get('code')
-        email = data.get('email')
-        if not otp_code or not email:
+        # Normalisations
+        raw_code = data.get('code')
+        email = (data.get('email') or '').strip()
+
+        if raw_code is None or not email:
             return _json_message("Champs requis: email, code", 400)
 
-        partner = request.env['res.partner'].sudo().search([('email', '=', email)], limit=1)
+        # s'assure d'avoir '0007' et pas 7
+        code = str(raw_code).strip()
+        if not code.isdigit():
+            return _json_message("Code OTP invalide ou expiré", 400)
+        code = code.zfill(4)
+
+        partner = request.env['res.partner'].sudo().search([('email', 'ilike', email)], limit=1)
         if not partner:
             return _json_message("Compte client non trouvé", 404)
 
         try:
-            ok = partner.verify_otp(otp_code)
+            ok = partner.verify_otp(code)
         except Exception:
             _logger.exception("Erreur verify_otp partner")
             ok = False
@@ -498,7 +507,7 @@ class GestionPartner(http.Controller):
         if not ok:
             return _json_message("Code OTP invalide ou expiré", 400)
 
-        partner.write({'is_verified': True})
+        partner.sudo().write({'is_verified': True})
         return _json({"success": True, "partner": _partner_payload(partner)}, 200)
 
     # ---------- OTP via FACTURE ----------

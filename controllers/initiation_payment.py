@@ -127,8 +127,8 @@ class PaymentController(http.Controller):
                 customer_msisdn=payload['phoneNumber'],
                 description=payload.get('description', 'Payment via Orange Money'),
                 reference=payload.get('reference'),
-                success_url=payload.get('success_url') or f"https://toubasandaga.sn/om-paiement?transaction={payload['transaction_id']}",
-                cancel_url=payload.get('cancel_url') or f"https://toubasandaga.sn/facture-magasin?transaction={account_move.transaction_id}",
+                success_url=payload.get('success_url') or f"https://portail.toubasandaga.sn/om-paiement?transaction={payload['transaction_id']}",
+                cancel_url=payload.get('cancel_url') or f"https://portail.toubasandaga.sn/facture-magasin?transaction={account_move.transaction_id}",
             )
 
             if not created or not created.get('success'):
@@ -163,8 +163,6 @@ class PaymentController(http.Controller):
                 'partner_id': partner.id,
                 'orange_id': created.get('qr_id'),
                 'callback_url': created.get('callback_url'),
-                'amount': float(orange_transaction.amount) if orange_transaction.amount else None,
-                'currency': orange_transaction.currency or (orange_transaction.account_move_id.currency_id and orange_transaction.account_move_id.currency_id.name) or 'XOF',
             })
 
             return self._make_response({
@@ -232,7 +230,7 @@ class PaymentController(http.Controller):
             payload_api = {
                 "amount": payload['amount'],
                 "currency": payload.get('currency', 'XOF'),
-                "success_url": payload.get('success_url') or f"https://toubasandaga.sn/wave-paiement?transaction={payload['transaction_id']}",
+                "success_url": payload.get('success_url') or f"https://portail.toubasandaga.sn/wave-paiement?transaction={payload['transaction_id']}",
                 "error_url": config.callback_url
             }
             headers = {
@@ -321,8 +319,8 @@ class PaymentController(http.Controller):
             description = f"Règlement facture {move.name}"
 
             # URLs succès génériques (le front peut les ignorer si besoin)
-            success_url_om = f"https://toubasandaga.sn/om-paiement?transaction={tx}"
-            success_url_wave = f"https://toubasandaga.sn/wave-paiement?transaction={tx}"
+            success_url_om = f"https://portail.toubasandaga.sn/om-paiement?transaction={tx}"
+            success_url_wave = f"https://portail.toubasandaga.sn/wave-paiement?transaction={tx}"
 
             # Payload commun
             base_payload = {
@@ -345,7 +343,7 @@ class PaymentController(http.Controller):
             if gateway in ('om', 'orange', 'orange_money', 'orangemoney'):
                 payload = dict(base_payload)
                 payload['success_url'] = success_url_om
-                payload['cancel_url'] = f"https://toubasandaga.sn/facture-magasin?transaction={move.transaction_id}"
+                payload['cancel_url'] = f"https://portail.toubasandaga.sn/facture-magasin?transaction={move.transaction_id}"
 
                 # garde-fou téléphone
                 if not payload.get('phoneNumber'):
@@ -373,20 +371,21 @@ class PaymentController(http.Controller):
     # ---------------------------------------------------------------------
     # (Optionnel) Routes existantes: wrap vers les cœurs
     # ---------------------------------------------------------------------
-    @http.route('/api/payment/orange/initiate', type='http', auth='public', cors='*', methods=['POST'], csrf=False)
-    def initiate_orange_payment(self, **kwargs):
-        try:
-            data = json.loads(request.httprequest.data or '{}')
-            return self._initiate_orange_core(data)
-        except Exception as e:
-            _logger.exception("initiate_orange_payment error")
-            return self._make_response({'error': str(e)}, 400)
+    # @http.route('/api/payment/orange/initiate', type='http', auth='public', cors='*', methods=['POST'], csrf=False)
+    # def initiate_orange_payment(self, **kwargs):
+    #     try:
+    #         data = json.loads(request.httprequest.data or '{}')
+    #         return self._initiate_orange_core(data)
+    #     except Exception as e:
+    #         _logger.exception("initiate_orange_payment error")
+    #         return self._make_response({'error': str(e)}, 400)
 
-    @http.route('/api/payment/wave/initiate', type='http', auth='public', cors='*', methods=['POST'], csrf=False)
-    def initiate_wave_payment(self, **kwargs):
-        try:
-            data = json.loads(request.httprequest.data or '{}')
-            return self._initiate_wave_core(data)
-        except Exception as e:
-            _logger.exception("initiate_wave_payment error")
-            return self._make_response({'error': str(e)}, 400)
+
+    # @http.route('/api/payment/wave/initiate', type='http', auth='public', cors='*', methods=['POST'], csrf=False)
+    # def initiate_wave_payment(self, **kwargs):
+    #     try:
+    #         data = json.loads(request.httprequest.data or '{}')
+    #         return self._initiate_wave_core(data)
+    #     except Exception as e:
+    #         _logger.exception("initiate_wave_payment error")
+    #         return self._make_response({'error': str(e)}, 400)

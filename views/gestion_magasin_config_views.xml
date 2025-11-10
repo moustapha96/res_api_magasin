@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-
+    <!-- Action -->
     <record id="action_gestion_magasin_config" model="ir.actions.act_window">
         <field name="name">Configuration Paiement (Front)</field>
         <field name="res_model">gestion.magasin.config</field>
@@ -12,26 +12,23 @@
     </record>
 
     <menuitem id="menu_rental_root"
-        name="Location" />
-        
+        name="Location"
+        sequence="10" />
+
+    <!-- Menu "Configuration" sous le menu racine "Location" -->
     <menuitem id="menu_rental_config_root"
         name="Configuration"
         parent="menu_rental_root"
         sequence="90" />
 
-
-    <!-- Menu Configuration sous le menu Rental existant -->
-    <menuitem id="menu_rental_config_root"
-        name="Configuration"
-        parent="base.menu_root"
-        sequence="90" />
-
+    <!-- Sous-menu "Paiement (Front)" avec action -->
     <menuitem id="menu_gestion_magasin_config"
         name="Paiement (Front)"
         parent="menu_rental_config_root"
         action="action_gestion_magasin_config"
         sequence="10" />
 
+        
     <!-- Tree -->
     <record id="view_gestion_magasin_config_tree" model="ir.ui.view">
         <field name="name">gestion.magasin.config.tree</field>

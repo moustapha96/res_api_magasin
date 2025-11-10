@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Action -->
+   
     <record id="action_gestion_magasin_config" model="ir.actions.act_window">
         <field name="name">Configuration Paiement (Front)</field>
         <field name="res_model">gestion.magasin.config</field>
@@ -14,7 +14,7 @@
     <!-- Menu Configuration sous le menu Rental existant -->
     <menuitem id="menu_rental_config_root"
         name="Configuration"
-        parent="menu_rental_root"
+        parent="base.menu_root"
         sequence="90" />
 
     <menuitem id="menu_gestion_magasin_config"

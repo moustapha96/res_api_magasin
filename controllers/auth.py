@@ -376,7 +376,7 @@ class ControllerREST(http.Controller):
     # ---------------------------------------------------------
     # AUTH: Refresh token
     # ---------------------------------------------------------
-    @http.route('/api/auth/refresh_token', methods=['POST'], type='http', auth='none', cors=rest_cors_value, csrf=False)
+    @http.route('/api/auth/refresh_token', methods=['POST'], type='http', auth='none', cors='*', csrf=False)
     def api_auth_refreshtoken(self, **kw):
         jdata = self._get_request_data()
 
@@ -410,7 +410,7 @@ class ControllerREST(http.Controller):
     # ---------------------------------------------------------
     # AUTH: Delete tokens
     # ---------------------------------------------------------
-    @http.route('/api/auth/delete_tokens', methods=['POST'], type='http', auth='none', cors=rest_cors_value, csrf=False)
+    @http.route('/api/auth/delete_tokens', methods=['POST'], type='http', auth='none', cors='*', csrf=False)
     def api_auth_deletetokens(self, **kw):
         jdata = self._get_request_data()
         refresh_token = jdata.get('refresh_token')
@@ -460,7 +460,7 @@ class ControllerREST(http.Controller):
     # ---------------------------------------------------------
     # AUTH: Login (POST)
     # ---------------------------------------------------------
-    @http.route('/api/auth/login', methods=['POST'], type='http', auth='none', cors=rest_cors_value, csrf=False)
+    @http.route('/api/auth/login', methods=['POST'], type='http', auth='none', cors='*', csrf=False)
     def api_auth_login_post(self, **kw):
         try:
             jdata = self._get_request_data()
@@ -496,7 +496,7 @@ class ControllerREST(http.Controller):
     # ---------------------------------------------------------
     # /api/me (profil courant)
     # ---------------------------------------------------------
-    @http.route('/api/me', methods=['GET'], type='http', auth='public', cors=rest_cors_value, csrf=False)
+    @http.route('/api/me', methods=['GET'], type='http', auth='public', cors='*', csrf=False)
     def api_me(self, **kw):
         try:
             uid = request.session.uid or None

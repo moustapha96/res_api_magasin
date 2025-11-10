@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-   
+
     <record id="action_gestion_magasin_config" model="ir.actions.act_window">
         <field name="name">Configuration Paiement (Front)</field>
         <field name="res_model">gestion.magasin.config</field>
@@ -10,6 +10,15 @@
             <p>Définissez l’URL publique vers laquelle vos factures redirigent pour le paiement.</p>
         </field>
     </record>
+
+    <menuitem id="menu_rental_root"
+        name="Location" />
+        
+    <menuitem id="menu_rental_config_root"
+        name="Configuration"
+        parent="menu_rental_root"
+        sequence="90" />
+
 
     <!-- Menu Configuration sous le menu Rental existant -->
     <menuitem id="menu_rental_config_root"

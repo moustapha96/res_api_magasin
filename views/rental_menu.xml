@@ -3,8 +3,19 @@
   <!-- Menu racine Location (sous Comptabilité ou Contacts au choix) -->
   <menuitem id="menu_rental_root" name="Gestion CCTS" sequence="65"/>
 
+  <!-- Menu Immeubles -->
   <menuitem id="menu_rental_buildings" name="Immeubles" parent="menu_rental_root" action="action_rental_building" sequence="10"/>
+
+  <!-- Menu Locaux -->
   <menuitem id="menu_rental_properties" name="Locaux" parent="menu_rental_root" action="action_rental_property" sequence="20"/>
+
+  <!-- Menu Contrats -->
   <menuitem id="menu_rental_contracts" name="Contrats" parent="menu_rental_root" action="action_rental_contract" sequence="30"/>
+
+  <!-- Menu Échéancier -->
   <menuitem id="menu_rental_schedules" name="Échéancier" parent="menu_rental_root" action="action_rental_payment_schedule" sequence="40"/>
+
+
+  <menuitem id="menu_rental_journals" name="Journaux" parent="menu_rental_root" action="account.action_account_journal_form" sequence="50"/>
+
 </odoo>

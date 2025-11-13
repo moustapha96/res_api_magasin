@@ -52,7 +52,8 @@
                     <group>
                         <field name="name" />
                         <field name="frontend_url"
-                            placeholder="https://app.mondomaine.com/facture-rental" />
+                            placeholder="https://app.mondomaine.com" />
+                        <field  name="frontend_url_facture"  placeholder="https://app.mondomaine.com"/>
                         <field name="active" />
                     </group>
                 </sheet>

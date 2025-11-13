@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- FORM : bloc Paiement en ligne (après les lignes de facture) -->
     <record id="view_move_form_inherit_rental_payment" model="ir.ui.view">
         <field name="name">account.move.form.inherit.rental.payment</field>
         <field name="model">account.move</field>
@@ -39,19 +38,11 @@
                         class="oe_highlight"
                         attrs="{'invisible': [('payment_link','=',False)]}" />
 
-                    <button
-                        name="generate_wave_payment_link"
-                        string="Générer le lien Wave"
-                        type="object"
-                        class="oe_highlight"
-                        attrs="{'invisible': [('payment_state','=','paid'), ('move_type','!=','out_invoice')]}" />
-
                 </group>
             </xpath>
         </field>
     </record>
 
-    <!-- TREE : affiche la colonne Lien de paiement et tri Desc -->
     <record id="view_move_tree_inherit_rental_payment" model="ir.ui.view">
         <field name="name">account.move.tree.inherit.rental.payment</field>
         <field name="model">account.move</field>

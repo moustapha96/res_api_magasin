@@ -39,6 +39,8 @@ class AccountMove(models.Model):
             res.write({'transaction_id': tid})
             base_url = res._compute_frontend_url()
             res.write({'payment_link': f"{base_url}?transaction={tid}"})
+            res.write({'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}"})
+            res.write({'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"})
         return res
 
     
@@ -47,7 +49,11 @@ class AccountMove(models.Model):
         for inv in self:
             if 'transaction_id' in vals:
                 base_url = inv._compute_frontend_url()
-                vals['payment_link'] = f"{base_url}?transaction={vals['transaction_id']}"
+                base_url_facture = inv._compute_frontend_paiement_url()
+                vals['payment_link'] = f"{base_url_facture}?transaction={vals['transaction_id']}"                
+                vals["payment_link_wave"] = f"{base_url}/paiement?type=wave&transaction={vals['transaction_id']}"  
+                vals["payment_link_orange_money"] = f"{base_url}/paiement?type=orange&transaction={vals['transaction_id']}"
+
             elif not inv.transaction_id and inv.move_type == 'out_invoice':
                 tid = str(uuid.uuid4())
                 vals['transaction_id'] = tid
@@ -71,6 +77,20 @@ class AccountMove(models.Model):
         return url
 
 
+    def _compute_frontend_paiement_url(self):
+        # 1) config model
+        cfg = self.env['gestion.magasin.config'].sudo().search([('active', '=', True)], limit=1)
+        if cfg and cfg.frontend_url_facture:
+            return cfg.frontend_url_facture
+        # 2) fallback ICP
+        icp = self.env['ir.config_parameter'].sudo()
+        icp_url = icp.get_param('rental.frontend_url_facture')
+        if icp_url:
+            return icp_url
+        # Aucun des deux configuré
+        raise ValidationError(_("Aucune URL front de paiement n’est configurée. "
+                                "Créez une configuration (menu: Rental > Configuration > Paiement (Front)) "
+                                "ou définissez le paramètre système 'rental.frontend_url_facture'."))
     def _compute_frontend_url(self):
         # 1) config model
         cfg = self.env['gestion.magasin.config'].sudo().search([('active', '=', True)], limit=1)
@@ -96,10 +116,15 @@ class AccountMove(models.Model):
     # ------------------------------------------------------------------
     def action_generate_payment_link(self):
         self.ensure_one()
+        base_url = self._compute_frontend_url()
+        base_url_facture = self._compute_frontend_paiement_url()
         tid = str(uuid.uuid4())
+        
         self.write({
             'transaction_id': tid,
-            'payment_link': f"{self._compute_frontend_url()}?transaction={tid}",
+            'payment_link': f"{base_url_facture}?transaction={tid}",
+            'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}",
+            'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"
         })
         msg, t = _("Le lien de paiement a été généré pour la facture %s.") % self.name, 'success'
         self.send_payment_link_sms_with_details()

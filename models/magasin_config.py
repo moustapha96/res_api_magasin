@@ -18,6 +18,13 @@ class GestionMagasinConfig(models.Model):
     )
 
     frontend_url = fields.Char(
+        string="URL Frontend",
+        required=True,
+        default='https://portail.toubasandaga.sn',
+        help="URL frontend (ex: https://app.mondomaine.com/facture-magasin)"
+    )
+
+    frontend_url_facture = fields.Char(
         string="URL de paiement (Front)",
         required=True,
         default='https://portail.toubasandaga.sn/facture-magasin',

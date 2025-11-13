@@ -24,7 +24,9 @@
 
                     <field name="rental_property_id"
                         attrs="{'invisible': [('move_type','!=','out_invoice')]}" />
+                </group>
 
+                <group string="Generation Lien de paiement">
                     <button name="action_generate_payment_link"
                         string="Générer le lien de paiement"
                         type="object"

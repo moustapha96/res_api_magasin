@@ -171,7 +171,7 @@ class AccountMove(models.Model):
                     _logger.warning("Affectation automatique du paiement impossible: %s", e)
         return True
 
-   
+
     def send_payment_link_sms_with_details(self):
         """
         Envoie un SMS avec :

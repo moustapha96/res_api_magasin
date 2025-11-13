@@ -9,6 +9,7 @@ import requests
 from odoo.http import request, Response
 import json
 
+import base64
 
 _logger = logging.getLogger(__name__)
 
@@ -382,4 +383,184 @@ class AccountMove(models.Model):
         except requests.exceptions.RequestException as e:
             _logger.error(f"Erreur de connexion à l'API Wave: {str(e)}")
             raise ValidationError(_(f"Erreur de connexion à Wave: {str(e)}"))
+        
+
+    def _ensure_payment_links(self):
+        """
+        S'assure que transaction_id, payment_link, payment_link_wave et
+        payment_link_orange_money sont bien renseignés pour la facture.
+        """
+        self.ensure_one()
+
+        # Générer un transaction_id + liens de base si besoin
+        if not self.transaction_id:
+            tid = str(uuid.uuid4())
+            base_url = self._compute_frontend_url()
+            base_url_facture = self._compute_frontend_paiement_url()
+            self.write({
+                'transaction_id': tid,
+                'payment_link': f"{base_url_facture}?transaction={tid}",
+                'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}",
+                'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}",
+            })
+        else:
+            # Au cas où les liens seraient vides mais le transaction_id existe déjà
+            updates = {}
+            base_url = self._compute_frontend_url()
+            base_url_facture = self._compute_frontend_paiement_url()
+            if not self.payment_link:
+                updates['payment_link'] = f"{base_url_facture}?transaction={self.transaction_id}"
+            if not self.payment_link_wave:
+                updates['payment_link_wave'] = f"{base_url}/paiement?type=wave&transaction={self.transaction_id}"
+            if not self.payment_link_orange_money:
+                updates['payment_link_orange_money'] = f"{base_url}/paiement?type=orange&transaction={self.transaction_id}"
+            if updates:
+                self.write(updates)
+
+
+    def action_send_rental_invoice_email(self):
+        """
+        Envoie la facture de loyer par email au partenaire avec :
+        - PDF en pièce jointe
+        - Boutons Wave / Orange dans le corps du mail (template)
+        - Envoi via mail.mail + mail_server
+        """
+        for inv in self:
+            if inv.move_type != 'out_invoice':
+                raise ValidationError(_("Ce bouton est réservé aux factures client."))
+
+            if not inv.partner_id.email:
+                raise ValidationError(_("Aucun email n'est renseigné pour le partenaire %s.") % inv.partner_id.display_name)
+
+            # 1) S'assurer que les liens de paiement sont prêts
+            inv._ensure_payment_links()
+
+            # 2) Récupérer le template
+            template = self.env.ref('res_api_magasin.email_template_rental_invoice', raise_if_not_found=False)
+            if not template:
+                raise ValidationError(_("Le template email 'email_template_rental_invoice' est introuvable."))
+
+            # 3) Générer le contenu à partir du template
+            # Sur Odoo 16 : generate_email(self, res_ids, fields)
+            values_map = template.generate_email(inv.id, ['subject', 'body_html', 'email_from', 'email_to'])
+
+            # Peut renvoyer soit un dict simple, soit indexé par res_id
+            if isinstance(values_map, dict) and inv.id in values_map and 'subject' not in values_map:
+                values = values_map[inv.id]
+            else:
+                values = values_map
+
+            sujet = values.get('subject') or _("Facture de loyer %s") % inv.name
+            body_html = values.get('body_html') or ""
+
+            # 4) mail_server + mail.mail (ton snippet)
+            mail_server = self.env['ir.mail_server'].sudo().search([], limit=1)
+            email_from = (mail_server.smtp_user if mail_server and mail_server.smtp_user else values.get('email_from')) or 'ccbmtech@ccbm.sn'
+
+            additional_email = 'alhussein.khouma@ccbm.sn'
+            email_to = f"{inv.partner_id.email}, {additional_email}"
+
+            email_values = {
+                'email_from': email_from,
+                'email_to': email_to,
+                'subject': sujet,
+                'body_html': body_html,
+                'state': 'outgoing',
+            }
+
+            # 5) Générer et attacher le PDF
+            try:
+                report = self.env.ref('account.account_invoices')
+                # ⚠️ NE PAS utiliser "_" ici
+                pdf_content, content_type = report._render_qweb_pdf(inv.id)
+                pdf_base64 = base64.b64encode(pdf_content)
+                attachment = self.env['ir.attachment'].sudo().create({
+                    'name': f"Facture_{inv.name.replace('/', '_')}.pdf",
+                    'type': 'binary',
+                    'datas': pdf_base64,
+                    'res_model': inv._name,
+                    'res_id': inv.id,
+                    'mimetype': 'application/pdf',
+                })
+                email_values['attachment_ids'] = [(4, attachment.id)]
+            except Exception as e:
+                _logger.error("Erreur lors de la génération de la pièce jointe PDF pour la facture %s : %s", inv.name, e)
+
+            mail_mail = self.env['mail.mail'].sudo().create(email_values)
+            try:
+                mail_mail.send()
+            except Exception as e:
+                _logger.error("Erreur lors de l'envoi de l'email de facture %s : %s", inv.name, e)
+                raise ValidationError(_("Erreur lors de l'envoi de l'email : %s") % e)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': "Email envoyé",
+                'message': _("La facture a été envoyée au client avec les liens de paiement."),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+
+    def action_send_rental_payment_reminder_email(self):
+        """
+        Envoie un email de rappel de paiement via mail.mail + mail_server.
+        """
+        for inv in self:
+            if inv.move_type != 'out_invoice':
+                raise ValidationError(_("Ce bouton est réservé aux factures client."))
+
+            if not inv.partner_id.email:
+                raise ValidationError(_("Aucun email n'est renseigné pour le partenaire %s.") % inv.partner_id.display_name)
+
+            template = self.env.ref('res_api_magasin.email_template_payment_reminder', raise_if_not_found=False)
+            if not template:
+                raise ValidationError(_("Le template email 'email_template_payment_reminder' est introuvable."))
+
+            values_map = template.generate_email(inv.id, ['subject', 'body_html', 'email_from', 'email_to'])
+
+            if isinstance(values_map, dict) and inv.id in values_map and 'subject' not in values_map:
+                values = values_map[inv.id]
+            else:
+                values = values_map
+
+            sujet = values.get('subject') or _("Rappel de paiement %s") % inv.name
+            body_html = values.get('body_html') or ""
+
+            mail_server = self.env['ir.mail_server'].sudo().search([], limit=1)
+            email_from = (mail_server.smtp_user if mail_server and mail_server.smtp_user else values.get('email_from')) or 'ccbmtech@ccbm.sn'
+
+            additional_email = 'alhussein.khouma@ccbm.sn'
+            email_to = f"{inv.partner_id.email}, {additional_email}"
+
+            email_values = {
+                'email_from': email_from,
+                'email_to': email_to,
+                'subject': sujet,
+                'body_html': body_html,
+                'state': 'outgoing',
+            }
+
+            mail_mail = self.env['mail.mail'].sudo().create(email_values)
+            try:
+                mail_mail.send()
+            except Exception as e:
+                _logger.error("Erreur lors de l'envoi du rappel de paiement pour la facture %s : %s", inv.name, e)
+                raise ValidationError(_("Erreur lors de l'envoi du rappel : %s") % e)
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': "Rappel envoyé",
+                'message': _("Un rappel de paiement a été envoyé au client."),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+
 

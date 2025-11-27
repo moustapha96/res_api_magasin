@@ -21,7 +21,7 @@ class Partner(models.Model):
     otp_code = fields.Char(string='Code OTP', copy=False)
     otp_expiration = fields.Datetime(string='Expiration OTP', copy=False)
 
-
+    
     
 
 

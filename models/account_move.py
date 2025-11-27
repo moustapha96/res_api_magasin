@@ -8,6 +8,7 @@ import uuid
 import requests 
 from odoo.http import request, Response
 import json
+from datetime import date, datetime, timedelta
 
 import base64
 
@@ -28,6 +29,38 @@ class AccountMove(models.Model):
     payment_link_wave = fields.Char(string="Lien de paiement Wave", help="URL publique pour régler la facture")
 
     payment_link_orange_money = fields.Char(string="Lien de paiement Orange Money", help="URL publique pour régler la facture")
+
+    last_reminder_date = fields.Date(string="Date du dernier rappel", help="Date du dernier envoi automatique de rappel pour cette facture")
+    
+    reminder_history_ids = fields.One2many(
+        'invoice.reminder.history',
+        'invoice_id',
+        string='Historique des rappels',
+        help="Historique de tous les SMS et emails de rappel envoyés pour cette facture"
+    )
+    
+    reminder_history_count = fields.Integer(
+        string='Nombre de rappels',
+        compute='_compute_reminder_history_count',
+        store=False
+    )
+    
+    def _compute_reminder_history_count(self):
+        """Calcule le nombre d'enregistrements d'historique pour chaque facture."""
+        for invoice in self:
+            invoice.reminder_history_count = len(invoice.reminder_history_ids)
+    
+    def action_view_reminder_history(self):
+        """Ouvre la vue de l'historique des rappels pour cette facture."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Historique des rappels - %s') % self.name,
+            'res_model': 'invoice.reminder.history',
+            'view_mode': 'tree,form',
+            'domain': [('invoice_id', '=', self.id)],
+            'context': {'default_invoice_id': self.id},
+        }
 
     # ------------------------------------------------------------------
     # CREATE / WRITE
@@ -116,7 +149,16 @@ class AccountMove(models.Model):
     # ACTIONS
     # ------------------------------------------------------------------
     def action_generate_payment_link(self):
+        """
+        Génère le lien de paiement uniquement pour la facture en question.
+        Cette méthode ne traite qu'une seule facture à la fois.
+        """
+        # S'assurer qu'une seule facture est traitée
+        if len(self) != 1:
+            raise ValidationError(_("Cette action ne peut être effectuée que sur une seule facture à la fois. Veuillez sélectionner une seule facture."))
+        
         self.ensure_one()
+        
         base_url = self._compute_frontend_url()
         base_url_facture = self._compute_frontend_paiement_url()
         tid = str(uuid.uuid4())
@@ -418,12 +460,16 @@ class AccountMove(models.Model):
                 self.write(updates)
 
 
+
+
     def action_send_rental_invoice_email(self):
         """
         Envoie la facture de loyer par email au partenaire avec :
         - PDF en pièce jointe
         - Boutons Wave / Orange dans le corps du mail (template)
         - Envoi via mail.mail + mail_server
+
+        Cette fonction est réservée aux factures client.
         """
         for inv in self:
             if inv.move_type != 'out_invoice':
@@ -458,7 +504,7 @@ class AccountMove(models.Model):
             email_from = (mail_server.smtp_user if mail_server and mail_server.smtp_user else values.get('email_from')) or 'ccbmtech@ccbm.sn'
 
             additional_email = 'alhussein.khouma@ccbm.sn'
-            email_to = f"{inv.partner_id.email}, {additional_email}"
+            email_to = f"{inv.partner_id.email}"
 
             email_values = {
                 'email_from': email_from,
@@ -534,7 +580,7 @@ class AccountMove(models.Model):
             email_from = (mail_server.smtp_user if mail_server and mail_server.smtp_user else values.get('email_from')) or 'ccbmtech@ccbm.sn'
 
             additional_email = 'alhussein.khouma@ccbm.sn'
-            email_to = f"{inv.partner_id.email}, {additional_email}"
+            email_to = f"{inv.partner_id.email}"
 
             email_values = {
                 'email_from': email_from,
@@ -561,6 +607,263 @@ class AccountMove(models.Model):
                 'sticky': False,
             }
         }
+
+    # ------------------------------------------------------------------
+    # CRON: Envoi automatique des rappels pour factures à terme
+    # ------------------------------------------------------------------
+    @api.model
+    def _cron_send_overdue_invoice_reminders(self):
+        """
+        Méthode appelée par le cron pour envoyer automatiquement des rappels
+        (SMS et/ou email) pour les factures à terme avec un montant restant à payer.
+        
+        Critères:
+        - Factures client (out_invoice)
+        - État: posted
+        - Date d'échéance <= aujourd'hui
+        - Montant restant > 0
+        - Payment state != 'paid'
+        - Pas de rappel envoyé aujourd'hui (last_reminder_date != today)
+        - Les rappels automatiques doivent être activés dans la configuration
+        """
+        # Vérifier si les rappels automatiques sont activés
+        config = self.env['gestion.magasin.config']
+        if not config.is_automatic_reminders_enabled():
+            _logger.info("[CRON] Les rappels automatiques sont désactivés dans la configuration. Aucun envoi effectué.")
+            return {
+                'sent_sms': 0,
+                'sent_email': 0,
+                'errors': ['Rappels automatiques désactivés'],
+            }
+        
+        today = fields.Date.today()
+        _logger.info("[CRON] Début de l'envoi automatique des rappels de factures à terme")
+        
+        # Rechercher les factures éligibles
+        overdue_invoices = self.search([
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+            ('invoice_date_due', '<=', today),
+            ('amount_residual', '>', 0),
+            ('payment_state', '!=', 'paid'),
+            '|',
+            ('last_reminder_date', '=', False),
+            ('last_reminder_date', '<', today),
+        ])
+        
+        _logger.info("[CRON] %d facture(s) trouvée(s) nécessitant un rappel", len(overdue_invoices))
+        
+        sent_sms_count = 0
+        sent_email_count = 0
+        errors = []
+        
+        for invoice in overdue_invoices:
+            try:
+                # Envoyer SMS si le client a un numéro de téléphone
+                phone = invoice.partner_id.mobile or invoice.partner_id.phone
+                if phone:
+                    try:
+                        invoice._send_overdue_reminder_sms()
+                        sent_sms_count += 1
+                        _logger.info("[CRON] SMS envoyé pour la facture %s à %s", invoice.name, phone)
+                    except Exception as e:
+                        error_msg = f"Erreur SMS facture {invoice.name}: {str(e)}"
+                        _logger.error("[CRON] %s", error_msg)
+                        errors.append(error_msg)
+                
+                # Envoyer email si le client a un email
+                if invoice.partner_id.email:
+                    try:
+                        invoice._send_overdue_reminder_email()
+                        sent_email_count += 1
+                        _logger.info("[CRON] Email envoyé pour la facture %s à %s", invoice.name, invoice.partner_id.email)
+                    except Exception as e:
+                        error_msg = f"Erreur email facture {invoice.name}: {str(e)}"
+                        _logger.error("[CRON] %s", error_msg)
+                        errors.append(error_msg)
+                
+                # Mettre à jour la date du dernier rappel
+                invoice.write({'last_reminder_date': today})
+                
+            except Exception as e:
+                error_msg = f"Erreur générale facture {invoice.name}: {str(e)}"
+                _logger.exception("[CRON] %s", error_msg)
+                errors.append(error_msg)
+        
+        _logger.info("[CRON] Fin de l'envoi automatique: %d SMS, %d emails, %d erreur(s)", 
+                    sent_sms_count, sent_email_count, len(errors))
+        
+        return {
+            'sent_sms': sent_sms_count,
+            'sent_email': sent_email_count,
+            'errors': errors,
+        }
+
+    def _send_overdue_reminder_sms(self):
+        """
+        Envoie un SMS de rappel pour une facture à terme avec montant restant.
+        """
+        self.ensure_one()
+        
+        phone = self.partner_id.mobile or self.partner_id.phone
+        if not phone:
+            return
+        
+        # S'assurer que les liens de paiement existent
+        self._ensure_payment_links()
+        
+        # Récupérer le nom du magasin (si disponible)
+        magasin_name = ""
+        if hasattr(self, 'rental_property_id') and self.rental_property_id:
+            magasin_name = self.rental_property_id.name
+        elif hasattr(self, 'rental_contract_id') and self.rental_contract_id and self.rental_contract_id.property_id:
+            magasin_name = self.rental_contract_id.property_id.name
+        
+        # Préparer le message SMS
+        message = _("Bonjour %(partner)s,\n"
+                    "Rappel: Votre facture %(invoice)s d'un montant de %(amount)s est arrivée à échéance.\n"
+                    "Montant restant à payer: %(residual)s %(currency)s\n"
+                    "%(magasin)s\n"
+                    "Lien de paiement: %(link)s\n"
+                    "\n"
+                    "Touba Sandaga") % {
+            'partner': self.partner_id.name,
+            'invoice': self.name,
+            'amount': f"{self.amount_total} {self.currency_id.symbol}",
+            'residual': self.amount_residual,
+            'currency': self.currency_id.symbol,
+            'magasin': f"Magasin: {magasin_name}" if magasin_name else "",
+            'link': self.payment_link or "N/A",
+        }
+        
+        # Créer et envoyer le SMS
+        try:
+            sms = self.env['send.sms'].create({
+                'recipient': phone,
+                'message': message,
+            })
+            sms.send_sms()
+            
+            # Enregistrer l'historique - succès
+            self.env['invoice.reminder.history'].create_history_record(
+                invoice_id=self.id,
+                reminder_type='sms',
+                recipient=phone,
+                status='sent',
+                message_content=message,
+                is_automatic=True
+            )
+            
+            _logger.info("[SMS REMINDER] SMS de rappel envoyé à %s pour la facture %s", phone, self.name)
+        except Exception as e:
+            error_msg = str(e)
+            # Enregistrer l'historique - échec
+            self.env['invoice.reminder.history'].create_history_record(
+                invoice_id=self.id,
+                reminder_type='sms',
+                recipient=phone,
+                status='failed',
+                error_message=error_msg,
+                message_content=message,
+                is_automatic=True
+            )
+            _logger.error("[SMS REMINDER] Erreur lors de l'envoi du SMS à %s pour la facture %s: %s", phone, self.name, error_msg)
+            raise
+
+    def _send_overdue_reminder_email(self):
+        """
+        Envoie un email de rappel pour une facture à terme avec la facture en pièce jointe.
+        """
+        self.ensure_one()
+        
+        if not self.partner_id.email:
+            return
+        
+        # S'assurer que les liens de paiement existent
+        self._ensure_payment_links()
+        
+        # Récupérer le template de rappel
+        template = self.env.ref('res_api_magasin.email_template_payment_reminder', raise_if_not_found=False)
+        if not template:
+            _logger.warning("[EMAIL REMINDER] Template 'email_template_payment_reminder' introuvable pour la facture %s", self.name)
+            # Fallback: utiliser le template de facture standard
+            template = self.env.ref('res_api_magasin.email_template_rental_invoice', raise_if_not_found=False)
+            if not template:
+                raise ValidationError(_("Aucun template email trouvé pour l'envoi de rappel."))
+        
+        # Générer le contenu à partir du template
+        values_map = template.generate_email(self.id, ['subject', 'body_html', 'email_from', 'email_to'])
+        
+        if isinstance(values_map, dict) and self.id in values_map and 'subject' not in values_map:
+            values = values_map[self.id]
+        else:
+            values = values_map
+        
+        sujet = values.get('subject') or _("Rappel - Facture %s arrivée à échéance") % self.name
+        body_html = values.get('body_html') or ""
+        
+        # Configuration email
+        mail_server = self.env['ir.mail_server'].sudo().search([], limit=1)
+        email_from = (mail_server.smtp_user if mail_server and mail_server.smtp_user else values.get('email_from')) or 'ccbmtech@ccbm.sn'
+        email_to = self.partner_id.email
+        
+        email_values = {
+            'email_from': email_from,
+            'email_to': email_to,
+            'subject': sujet,
+            'body_html': body_html,
+            'state': 'outgoing',
+        }
+        
+        # Générer et attacher le PDF de la facture
+        try:
+            report = self.env.ref('account.account_invoices')
+            pdf_content, content_type = report._render_qweb_pdf(self.id)
+            pdf_base64 = base64.b64encode(pdf_content)
+            attachment = self.env['ir.attachment'].sudo().create({
+                'name': f"Facture_{self.name.replace('/', '_')}.pdf",
+                'type': 'binary',
+                'datas': pdf_base64,
+                'res_model': self._name,
+                'res_id': self.id,
+                'mimetype': 'application/pdf',
+            })
+            email_values['attachment_ids'] = [(4, attachment.id)]
+        except Exception as e:
+            _logger.error("[EMAIL REMINDER] Erreur lors de la génération de la pièce jointe PDF pour la facture %s : %s", self.name, e)
+        
+        # Créer et envoyer l'email
+        mail_mail = self.env['mail.mail'].sudo().create(email_values)
+        try:
+            mail_mail.send()
+            
+            # Enregistrer l'historique - succès
+            self.env['invoice.reminder.history'].create_history_record(
+                invoice_id=self.id,
+                reminder_type='email',
+                recipient=email_to,
+                status='sent',
+                message_content=sujet,
+                mail_id=mail_mail.id,
+                is_automatic=True
+            )
+            
+            _logger.info("[EMAIL REMINDER] Email de rappel envoyé à %s pour la facture %s", email_to, self.name)
+        except Exception as e:
+            error_msg = str(e)
+            # Enregistrer l'historique - échec
+            self.env['invoice.reminder.history'].create_history_record(
+                invoice_id=self.id,
+                reminder_type='email',
+                recipient=email_to,
+                status='failed',
+                error_message=error_msg,
+                message_content=sujet,
+                mail_id=mail_mail.id if mail_mail else None,
+                is_automatic=True
+            )
+            _logger.error("[EMAIL REMINDER] Erreur lors de l'envoi de l'email de rappel pour la facture %s : %s", self.name, e)
+            raise
 
 
 

@@ -37,6 +37,7 @@
             <tree>
                 <field name="name" />
                 <field name="frontend_url" />
+                <field name="enable_automatic_reminders" widget="boolean_toggle"/>
                 <field name="active" />
             </tree>
         </field>
@@ -55,6 +56,11 @@
                             placeholder="https://app.mondomaine.com" />
                         <field  name="frontend_url_facture"  placeholder="https://app.mondomaine.com"/>
                         <field name="active" />
+                    </group>
+                    <group string="Rappels automatiques">
+                        <field name="enable_automatic_reminders" 
+                            widget="boolean_toggle"
+                            options="{'no_create': True}"/>
                     </group>
                 </sheet>
             </form>

@@ -245,12 +245,49 @@
 
                             <p>Merci de régulariser votre situation dans les plus brefs délais.</p>
 
+                            <!-- Boutons de Paiement -->
+                            <div style="margin: 20px 0; text-align: center;">
+                                <p style="margin-bottom: 15px; font-weight: bold; color: #333;">Choisissez votre moyen de paiement :</p>
+
+                                <!-- Wave -->
+                                <div style="margin: 10px 0;">
+                                    <a t-att-href="object.payment_link_wave or '#'"
+                                        style="display: inline-block; padding: 12px 24px; margin: 5px; background-color: #00A3E0; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                        💳 Payer avec Wave
+                                    </a>
+                                </div>
+
+                                <!-- Orange Money -->
+                                <div style="margin: 10px 0;">
+                                    <a t-att-href="object.payment_link_orange_money or '#'"
+                                        style="display: inline-block; padding: 12px 24px; margin: 5px; background-color: #FF7900; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                        💳 Payer avec Orange Money
+                                    </a>
+                                </div>
+
+                                <!-- Lien de paiement général -->
+                                <div style="margin: 10px 0;">
+                                    <a t-att-href="object.payment_link or '#'"
+                                        style="display: inline-block; padding: 12px 24px; margin: 5px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                                        💳 Payer en ligne
+                                    </a>
+                                </div>
+                            </div>
+
+                            <p style="margin-top: 20px;">Vous trouverez votre facture en pièce jointe de ce message.</p>
+
                             <p style="margin-top: 30px;">Cordialement,<br /><span
                                     t-out="object.company_id.name or 'N/A'" /></p>
                         </td>
                     </tr>
                 </table>
             </div>
+        </field>
+
+        <!-- Attacher le PDF de la facture -->
+        <field name="report_template" ref="account.account_invoices" />
+        <field name="report_name">
+            Facture_{{ (object.name or '').replace('/','_') }}
         </field>
     </record>
 

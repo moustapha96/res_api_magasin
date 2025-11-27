@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action -->
+    <record id="action_invoice_reminder_history" model="ir.actions.act_window">
+        <field name="name">Historique des Rappels</field>
+        <field name="res_model">invoice.reminder.history</field>
+        <field name="view_mode">tree,form,graph,pivot</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p>Consultez l'historique de tous les SMS et emails de rappel envoyés pour les factures à terme.</p>
+            <p>Vous pouvez filtrer par statut (envoyé, échec), type (SMS, Email), ou facture.</p>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_invoice_reminder_history_tree" model="ir.ui.view">
+        <field name="name">invoice.reminder.history.tree</field>
+        <field name="model">invoice.reminder.history</field>
+        <field name="arch" type="xml">
+            <tree string="Historique des Rappels" decoration-success="status == 'sent'" decoration-danger="status == 'failed'" decoration-muted="status == 'pending'">
+                <field name="send_date" string="Date"/>
+                <field name="invoice_id" string="Facture"/>
+                <field name="partner_id" string="Client"/>
+                <field name="reminder_type" string="Type" widget="badge" decoration-info="reminder_type == 'sms'" decoration-primary="reminder_type == 'email'"/>
+                <field name="recipient" string="Destinataire"/>
+                <field name="status" string="Statut" widget="badge" decoration-success="status == 'sent'" decoration-danger="status == 'failed'" decoration-warning="status == 'pending'"/>
+                <field name="is_automatic" string="Automatique" widget="boolean_toggle"/>
+                <field name="error_message" string="Erreur" attrs="{'invisible': [('status', '!=', 'failed')]}"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_invoice_reminder_history_form" model="ir.ui.view">
+        <field name="name">invoice.reminder.history.form</field>
+        <field name="model">invoice.reminder.history</field>
+        <field name="arch" type="xml">
+            <form string="Détails du Rappel">
+                <header>
+                    <field name="status" widget="statusbar" statusbar_visible="sent,failed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="invoice_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="send_date"/>
+                            <field name="reminder_type" widget="radio" options="{'horizontal': true}"/>
+                        </group>
+                        <group>
+                            <field name="recipient"/>
+                            <field name="status" widget="radio" options="{'horizontal': true}"/>
+                            <field name="is_automatic" widget="boolean_toggle"/>
+                            <field name="mail_id" options="{'no_create': True}" attrs="{'invisible': [('reminder_type', '!=', 'email')]}"/>
+                        </group>
+                    </group>
+                    <group string="Contenu">
+                        <field name="message_content" nolabel="1" placeholder="Contenu du message ou sujet de l'email"/>
+                    </group>
+                    <group string="Erreur" attrs="{'invisible': [('status', '!=', 'failed')]}">
+                        <field name="error_message" nolabel="1" placeholder="Message d'erreur en cas d'échec"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Graph View -->
+    <record id="view_invoice_reminder_history_graph" model="ir.ui.view">
+        <field name="name">invoice.reminder.history.graph</field>
+        <field name="model">invoice.reminder.history</field>
+        <field name="arch" type="xml">
+            <graph string="Statistiques des Rappels" type="bar">
+                <field name="status" type="row"/>
+                <field name="reminder_type" type="row"/>
+                <field name="id" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Pivot View -->
+    <record id="view_invoice_reminder_history_pivot" model="ir.ui.view">
+        <field name="name">invoice.reminder.history.pivot</field>
+        <field name="model">invoice.reminder.history</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse des Rappels">
+                <field name="reminder_type" type="row"/>
+                <field name="status" type="col"/>
+                <field name="id" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_invoice_reminder_history_search" model="ir.ui.view">
+        <field name="name">invoice.reminder.history.search</field>
+        <field name="model">invoice.reminder.history</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher dans l'historique">
+                <field name="invoice_id"/>
+                <field name="partner_id"/>
+                <field name="recipient"/>
+                <field name="message_content"/>
+                <filter string="Envoyés" name="sent" domain="[('status', '=', 'sent')]"/>
+                <filter string="Échecs" name="failed" domain="[('status', '=', 'failed')]"/>
+                <filter string="En attente" name="pending" domain="[('status', '=', 'pending')]"/>
+                <separator/>
+                <filter string="SMS" name="sms" domain="[('reminder_type', '=', 'sms')]"/>
+                <filter string="Email" name="email" domain="[('reminder_type', '=', 'email')]"/>
+                <separator/>
+                <filter string="Automatiques" name="automatic" domain="[('is_automatic', '=', True)]"/>
+                <filter string="Manuels" name="manual" domain="[('is_automatic', '=', False)]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="Type" name="group_reminder_type" context="{'group_by': 'reminder_type'}"/>
+                    <filter string="Statut" name="group_status" context="{'group_by': 'status'}"/>
+                    <filter string="Facture" name="group_invoice" context="{'group_by': 'invoice_id'}"/>
+                    <filter string="Client" name="group_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'send_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_invoice_reminder_history"
+        name="Historique des Rappels"
+        parent="menu_rental_config_root"
+        action="action_invoice_reminder_history"
+        sequence="20" />
+
+</odoo>
+

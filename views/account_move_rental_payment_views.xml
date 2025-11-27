@@ -55,6 +55,7 @@
                         string="Générer le lien de paiement"
                         type="object"
                         class="oe_highlight"
+                        multi="False"
                     />
 
                     <button
@@ -65,6 +66,44 @@
                         attrs="{'invisible': [('payment_link','=',False)]}" />
 
                 </group>
+            </xpath>
+            
+            <!-- Ajouter un onglet pour l'historique des rappels -->
+            <xpath expr="//sheet" position="inside">
+                <group string="Rappels" 
+                      attrs="{'invisible': [('move_type','!=','out_invoice')]}">
+                    <button name="action_view_reminder_history"
+                            type="object"
+                            string="Historique des rappels"
+                            class="oe_stat_button"
+                            icon="fa-envelope"
+                            attrs="{'invisible': [('reminder_history_count','=',0)]}"/>
+                    <field name="reminder_history_count" widget="statinfo" string="Rappels envoyés"/>
+                    <field name="last_reminder_date" readonly="1" string="Dernier rappel"/>
+                </group>
+            </xpath>
+            
+            <xpath expr="//notebook" position="inside">
+                <page string="Historique des Rappels" 
+                      attrs="{'invisible': [('move_type','!=','out_invoice')]}">
+                    <field name="reminder_history_ids" nolabel="1" context="{'default_invoice_id': active_id}">
+                        <tree decoration-success="status == 'sent'" 
+                              decoration-danger="status == 'failed'" 
+                              decoration-muted="status == 'pending'">
+                            <field name="send_date"/>
+                            <field name="reminder_type" widget="badge" 
+                                   decoration-info="reminder_type == 'sms'" 
+                                   decoration-primary="reminder_type == 'email'"/>
+                            <field name="recipient"/>
+                            <field name="status" widget="badge" 
+                                   decoration-success="status == 'sent'" 
+                                   decoration-danger="status == 'failed'" 
+                                   decoration-warning="status == 'pending'"/>
+                            <field name="is_automatic" widget="boolean_toggle"/>
+                            <field name="error_message" attrs="{'invisible': [('status', '!=', 'failed')]}"/>
+                        </tree>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>

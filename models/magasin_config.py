@@ -33,6 +33,12 @@ class GestionMagasinConfig(models.Model):
 
     active = fields.Boolean(default=True)
 
+    enable_automatic_reminders = fields.Boolean(
+        string="Activer les rappels automatiques",
+        default=True,
+        help="Si activé, le système enverra automatiquement des SMS et emails de rappel pour les factures à terme avec un montant restant à payer"
+    )
+
     def get_frontend_url(self):
         """Retourne l'URL de paiement front (sélectionne l’enregistrement courant)."""
         self.ensure_one()
@@ -45,3 +51,11 @@ class GestionMagasinConfig(models.Model):
         """Utilitaire: récupère l'URL depuis la config active, sinon None."""
         rec = self.search([('active', '=', True)], limit=1)
         return rec.frontend_url if rec and rec.frontend_url else None
+
+    @api.model
+    def is_automatic_reminders_enabled(self):
+        """Vérifie si les rappels automatiques sont activés dans la configuration active."""
+        config = self.search([('active', '=', True)], limit=1)
+        if config:
+            return config.enable_automatic_reminders
+        return False

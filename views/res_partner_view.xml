@@ -1,29 +1,25 @@
 <odoo>
     <data>
-        <!-- Héritage de la vue formulaire de res.partner -->
         <record id="view_partner_form_inherit_custom_fields" model="ir.ui.view">
             <field name="name">res.partner.form.inherit.custom.fields</field>
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form" />
             <field name="arch" type="xml">
-                <!-- Ajout des champs dans l'onglet "Informations" (ou un nouvel onglet) -->
                <xpath expr="//notebook" position="inside">
-                    <!-- Section pour les champs personnalisés -->
                     <group string="Informations Personnelles" colspan="4">
                         <field name="is_verified" />
-                        <!-- <field name="avatar" widget="image" class="oe_avatar" /> -->
                         <field name="date_naissance" />
                         <field name="lieu_naissance" />
                         <field name="sexe" />
                         <field name="nationalite" />
                     </group>
-                    <!-- Section pour les champs sensibles (optionnel : masqués par défaut) -->
                     <group string="Sécurité" colspan="4">
-                        <field name="password" password="True" />
+                        <field name="password" />
                         <field name="otp_code" readonly="1" />
                         <field name="otp_expiration" readonly="1" />
                     </group>
                 </xpath>
+
             </field>
         </record>
     </data>

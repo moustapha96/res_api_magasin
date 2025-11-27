@@ -1,13 +1,14 @@
 <odoo>
-    <data>
-        <record id="view_partner_form_inherit_custom_fields" model="ir.ui.view">
-            <field name="name">res.partner.form.inherit.custom.fields</field>
-            <field name="model">res.partner</field>
-            <field name="inherit_id" ref="base.view_partner_form" />
-            <field name="arch" type="xml">
-               <xpath expr="//notebook" position="inside">
-                    <group string="Informations Personnelles" colspan="4">
-                        <field name="is_verified" />
+  <record id="view_partner_form_with_otp" model="ir.ui.view">
+    <field name="name">res.partner.form.otp</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet/notebook" position="inside">
+        <page string="Informations Personnelles">
+          
+            <group string="Informations Personnelles" colspan="4">
+                <field name="is_verified" />
                         <field name="date_naissance" />
                         <field name="lieu_naissance" />
                         <field name="sexe" />
@@ -18,9 +19,9 @@
                         <field name="otp_code" readonly="1" />
                         <field name="otp_expiration" readonly="1" />
                     </group>
-                </xpath>
-
-            </field>
-        </record>
-    </data>
+        </page>
+      </xpath>
+    </field>
+  </record>
 </odoo>
+

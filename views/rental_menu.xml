@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+  <!-- Action pour account.account -->
+  <record id="action_account_account" model="ir.actions.act_window">
+    <field name="name">Comptes</field>
+    <field name="res_model">account.account</field>
+    <field name="view_mode">tree,form</field>
+    <field name="help" type="html">
+      <p>Gérez vos comptes comptables.</p>
+    </field>
+  </record>
+
   <!-- Menu racine Location (sous Comptabilité ou Contacts au choix) -->
   <menuitem id="menu_rental_root" name="Gestion CCTS" sequence="65"/>
 
@@ -15,7 +25,23 @@
   <!-- Menu Échéancier -->
   <menuitem id="menu_rental_schedules" name="Échéancier" parent="menu_rental_root" action="action_rental_payment_schedule" sequence="40"/>
 
+  <!-- Menu Comptes -->
+  <menuitem id="menu_rental_accounts" name="Comptes" parent="menu_rental_root" action="action_account_account" sequence="45"/>
 
   <menuitem id="menu_rental_journals" name="Journaux" parent="menu_rental_root" action="account.action_account_journal_form" sequence="50"/>
+
+  <!-- Action pour les Contacts -->
+  <record id="action_rental_contacts" model="ir.actions.act_window">
+    <field name="name">Contacts</field>
+    <field name="res_model">res.partner</field>
+    <field name="view_mode">tree,form,kanban</field>
+    <field name="context">{'search_default_customer': 1, 'default_customer_rank': 1}</field>
+    <field name="help" type="html">
+      <p>Gérez vos contacts clients.</p>
+    </field>
+  </record>
+
+  <!-- Menu Contacts -->
+  <menuitem id="menu_rental_contacts" name="Contacts" parent="menu_rental_root" action="action_rental_contacts" sequence="60"/>
 
 </odoo>

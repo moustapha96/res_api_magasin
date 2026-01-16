@@ -71,10 +71,20 @@ class AccountMove(models.Model):
         if vals.get('move_type') == 'out_invoice':
             tid = vals.get('transaction_id') or str(uuid.uuid4())
             res.write({'transaction_id': tid})
-            base_url = res._compute_frontend_url()
-            res.write({'payment_link': f"{base_url}?transaction={tid}"})
-            res.write({'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}"})
-            res.write({'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"})
+            # base_url = res._compute_frontend_url()
+            # res.write({'payment_link': f"{base_url}?transaction={tid}"})
+            # res.write({'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}"})
+            # res.write({'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"})
+
+            try:
+                base_url = res._compute_frontend_url()
+                res.write({'payment_link': f"{base_url}?transaction={tid}"})
+                res.write({'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}"})
+                res.write({'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"})
+            except Exception as e:
+                _logger.error(f"Erreur lors de la génération du lien de paiement Wave: {e}")
+            
+
         return res
 
     
@@ -82,17 +92,24 @@ class AccountMove(models.Model):
     def write(self, vals):
         for inv in self:
             if 'transaction_id' in vals:
-                base_url = inv._compute_frontend_url()
-                base_url_facture = inv._compute_frontend_paiement_url()
-                vals['payment_link'] = f"{base_url_facture}?transaction={vals['transaction_id']}"                
-                vals["payment_link_wave"] = f"{base_url}/paiement?type=wave&transaction={vals['transaction_id']}"  
-                vals["payment_link_orange_money"] = f"{base_url}/paiement?type=orange&transaction={vals['transaction_id']}"
+                try:
+                    base_url = inv._compute_frontend_url()
+                    base_url_facture = inv._compute_frontend_paiement_url()
+                    vals['payment_link'] = f"{base_url_facture}?transaction={vals['transaction_id']}"                
+                    vals["payment_link_wave"] = f"{base_url}/paiement?type=wave&transaction={vals['transaction_id']}"  
+                    vals["payment_link_orange_money"] = f"{base_url}/paiement?type=orange&transaction={vals['transaction_id']}"
+                except Exception as e:
+                    _logger.error(f"Erreur lors de la génération du lien de paiement Wave: {e}")
 
             elif not inv.transaction_id and inv.move_type == 'out_invoice':
                 tid = str(uuid.uuid4())
                 vals['transaction_id'] = tid
-                base_url = inv._compute_frontend_url()
-                vals['payment_link'] = f"{base_url}?transaction={tid}"
+                try:
+                    base_url = inv._compute_frontend_url()
+                    vals['payment_link'] = f"{base_url}?transaction={tid}"
+                except Exception as e:
+                    _logger.error(f"Erreur lors de la génération du lien de paiement Wave: {e}")
+
         return super().write(vals)
 
     # ------------------------------------------------------------------
@@ -148,6 +165,35 @@ class AccountMove(models.Model):
     # ------------------------------------------------------------------
     # ACTIONS
     # ------------------------------------------------------------------
+    def generate_payment_link(self):
+        """
+        Génère le lien de paiement uniquement pour la facture en question.
+        Cette méthode ne traite qu'une seule facture à la fois.
+        """
+        # S'assurer qu'une seule facture est traitée
+        if len(self) != 1:
+            return False
+        try:
+            self.ensure_one()
+            
+            base_url = self._compute_frontend_url()
+            base_url_facture = self._compute_frontend_paiement_url()
+            tid = str(uuid.uuid4())
+            
+            self.write({
+                'transaction_id': tid,
+                'payment_link': f"{base_url_facture}?transaction={tid}",
+                'payment_link_wave': f"{base_url}/paiement?type=wave&transaction={tid}",
+                'payment_link_orange_money': f"{base_url}/paiement?type=orange&transaction={tid}"
+            })
+            return True
+        except Exception as e:
+            _logger.error(f"Erreur lors de la génération du lien de paiement: {e}")
+            return False
+
+
+
+    
     def action_generate_payment_link(self):
         """
         Génère le lien de paiement uniquement pour la facture en question.
@@ -209,7 +255,11 @@ class AccountMove(models.Model):
         for line in pay.line_ids:
             if line.account_id.internal_type in ('receivable', 'payable'):
                 try:
-                    self.js_assign_outstanding_line(line.id)
+                    assign_line = getattr(self, 'js_assign_outstanding_line', None)
+                    if callable(assign_line):
+                        assign_line(line.id)
+                    else:
+                        _logger.warning("Méthode 'js_assign_outstanding_line' inexistante sur le modèle %s", self._name)
                 except Exception as e:
                     _logger.warning("Affectation automatique du paiement impossible: %s", e)
         return True

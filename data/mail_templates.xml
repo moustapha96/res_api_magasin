@@ -291,4 +291,113 @@
         </field>
     </record>
 
+    <!-- Template Email pour Envoi de Mot de Passe Web -->
+    <record id="email_template_send_password" model="mail.template">
+        <field name="name">Envoi de Mot de Passe Web</field>
+        <field name="model_id" ref="base.model_res_partner" />
+        <field name="subject">Vos identifiants de connexion - {{ object.company_id.name or 'Portail' }}</field>
+        <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="lang">{{ object.lang }}</field>
+        <field name="auto_delete" eval="False" />
+
+        <field name="body_html" type="html">
+            <div style="margin: 0px; padding: 0px; font-family: Arial, Helvetica, sans-serif; font-size: 14px;">
+                <table border="0" cellpadding="0" cellspacing="0"
+                    style="padding-top: 16px; background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #555; width: 100%; border-collapse:separate;">
+                    <tbody>
+                        <tr>
+                            <td align="center">
+                                <table border="0" cellpadding="0" cellspacing="0" width="590"
+                                    style="padding: 16px; background-color: white; border: 1px solid #e0e0e0;">
+                                    <tbody>
+                                        <!-- Header -->
+                                        <tr>
+                                            <td align="center" style="padding: 10px 0px;">
+                                                <img src="https://portail.toubasandaga.sn/logo.png" style="height: 60px;" alt="logo"/>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Titre -->
+                                        <tr>
+                                            <td style="padding: 20px 0px; font-size: 20px; font-weight: bold; color: #333;">
+                                                Bonjour <span t-out="object.name or 'N/A'" />,
+                                            </td>
+                                        </tr>
+
+                                        <!-- Message Principal -->
+                                        <tr>
+                                            <td style="padding: 10px 0px; line-height: 22px;">
+                                                <p>Vos identifiants de connexion pour accéder au portail web ont été créés avec succès.</p>
+                                                <p>Vous pouvez maintenant vous connecter en utilisant les informations suivantes :</p>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Identifiants -->
+                                        <tr>
+                                            <td style="padding: 20px 0px;">
+                                                <table border="0" cellpadding="5" cellspacing="0" width="100%"
+                                                    style="border: 1px solid #e0e0e0; background-color: #f8f9fa;">
+                                                    <tr style="background-color: #487a43; color: white;">
+                                                        <td colspan="2" style="padding: 15px; font-weight: bold; font-size: 16px; text-align: center;">
+                                                            🔐 VOS IDENTIFIANTS DE CONNEXION
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="padding: 15px; font-weight: bold; width: 40%;">
+                                                            📧 Adresse Email :
+                                                        </td>
+                                                        <td style="padding: 15px; font-size: 16px; color: #487a43;">
+                                                            <strong><span t-out="object.email or 'N/A'" /></strong>
+                                                        </td>
+                                                    </tr>
+                                                    <tr style="background-color: white;">
+                                                        <td style="padding: 15px; font-weight: bold;">
+                                                            🔑 Mot de Passe :
+                                                        </td>
+                                                        <td style="padding: 15px; font-size: 16px; color: #28a745;">
+                                                            <strong><span t-out="object.password or 'N/A'" /></strong>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Instructions -->
+                                        <tr>
+                                            <td style="padding: 10px 0px; line-height: 22px;">
+                                                <p>Pour vous connecter :</p>
+                                                <ol style="padding-left: 20px;">
+                                                    <li>Rendez-vous sur le portail web</li>
+                                                    <li>Utilisez votre adresse email comme identifiant</li>
+                                                    <li>Entrez le mot de passe fourni ci-dessus</li>
+                                                </ol>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Footer -->
+                                        <tr>
+                                            <td
+                                                style="padding: 20px 0px; border-top: 1px solid #e0e0e0; text-align: center; color: #888; font-size: 12px;">
+                                                <p>Pour toute question ou assistance, contactez-nous :</p>
+                                                <p>
+                                                    📧 <span t-out="object.company_id.email or 'N/A'" /><br />
+                                                    📞 <span t-out="object.company_id.phone or 'N/A'" /><br />
+                                                    🏢 <span t-out="object.company_id.name or 'N/A'" />
+                                                </p>
+                                                <p style="margin-top: 20px;">
+                                                   CCT Touba Sandaga
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </field>
+    </record>
+
 </odoo>

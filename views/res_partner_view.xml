@@ -4,6 +4,19 @@
     <field name="model">res.partner</field>
     <field name="inherit_id" ref="base.view_partner_form"/>
     <field name="arch" type="xml">
+      <!-- Ajouter le bouton au début du sheet -->
+      <xpath expr="//sheet" position="inside">
+        <div class="oe_button_box" name="button_box">
+          <button name="action_create_and_send_password" 
+                  type="object" 
+                  string="Créer et Envoyer le Mot de Passe"
+                  class="oe_stat_button"
+                  icon="fa-key"
+                  attrs="{'invisible': [('email', '=', False)]}"
+                  help="Génère un nouveau mot de passe web et l'envoie par email au contact"/>
+        </div>
+      </xpath>
+      
       <xpath expr="//sheet/notebook" position="inside">
         <page string="Informations Personnelles">
           
@@ -18,6 +31,18 @@
                         <field name="password" />
                         <field name="otp_code" readonly="1" />
                         <field name="otp_expiration" readonly="1" />
+                    </group>
+                    <group string="Comptabilité" colspan="4">
+                        <field name="property_account_receivable_id" 
+                               string="Compte Client"
+                               options="{'no_create': True}"
+                               help="Compte comptable utilisé pour les créances clients"/>
+                    </group>
+                    <group string="" colspan="4">
+                        <field name="property_account_payable_id" 
+                               string="Compte Fournisseur"
+                               options="{'no_create': True}"
+                               help="Compte comptable utilisé pour les dettes fournisseurs"/>
                     </group>
         </page>
       </xpath>

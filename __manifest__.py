@@ -24,16 +24,16 @@
     'data': [
         'security/ir.model.access.csv',
         'data/ir_configparameter_data.xml',
-        # 'views/rental_contract_views.xml',
-        # 'views/rental_building_views.xml',
-        # 'views/rental_property_views.xml',
-        # 'views/rental_payment_schedule_views.xml',
-        # 'views/gestion_magasin_config_views.xml',
-        # 'views/account_move_rental_payment_views.xml',
-        # 'views/invoice_reminder_history_views.xml',
-        # 'views/rental_menu.xml',
-        # 'views/res_partner_view.xml',
-        # 'data/mail_templates.xml'
+        'views/rental_contract_views.xml',
+        'views/rental_building_views.xml',
+        'views/rental_property_views.xml',
+        'views/rental_payment_schedule_views.xml',
+        'views/gestion_magasin_config_views.xml',
+        'views/account_move_rental_payment_views.xml',
+        'views/invoice_reminder_history_views.xml',
+        'views/rental_menu.xml',
+        'views/res_partner_view.xml',
+        'data/mail_templates.xml'
 
     ],
     'images': [

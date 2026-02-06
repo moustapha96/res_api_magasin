@@ -365,6 +365,30 @@ class ResetPasswordREST(http.Controller):
                 response=json.dumps({'status': 'error', 'message': 'Utilisateur ou compte non existant'})
             )
         
+    def _normalize_phone_senegal(self, phone):
+        """
+        Normalise un numéro pour le Sénégal : si le numéro ne commence pas par +221 ou 221,
+        on ajoute l'indicatif 221. Retourne une liste de variantes pour la recherche
+        (avec/sans +, avec 00) pour matcher comme stocké en base.
+        """
+        if not phone or not isinstance(phone, str):
+            return []
+        raw = phone.strip().replace(' ', '').replace('\u00a0', '')
+        if not raw:
+            return []
+        if raw.startswith('+'):
+            raw = raw[1:]
+        if raw.startswith('00'):
+            raw = raw[2:]
+        if not raw.startswith('221'):
+            raw = '221' + raw.lstrip('0')
+        variants = [
+            '+' + raw,
+            raw,
+            '00' + raw,
+        ]
+        return list(dict.fromkeys(variants))
+
     @http.route('/api/reset-password-sms/<phone>', methods=['GET'], type='http', auth='none', cors='*', csrf=False)
     def reset_password_request_phone(self, phone, **kwargs):
         if not phone:
@@ -380,7 +404,17 @@ class ResetPasswordREST(http.Controller):
             admin_user = request.env.ref('base.user_admin')
             request.env = request.env(user=admin_user.id)
 
-        partner = request.env['res.partner'].sudo().search([('phone', '=', phone)], limit=1)
+        phone_variants = self._normalize_phone_senegal(phone)
+        if not phone_variants:
+            return werkzeug.wrappers.Response(
+                status=400,
+                content_type='application/json; charset=utf-8',
+                headers=[('Cache-Control', 'no-store'), ('Pragma', 'no-cache')],
+                response=json.dumps({'status': 'error', 'message': 'Numéro de téléphone non valide'})
+            )
+
+        domain = ['|', ('phone', 'in', phone_variants), ('mobile', 'in', phone_variants)]
+        partner = request.env['res.partner'].sudo().search(domain, limit=1)
         
         if partner:
             # Générer un token de réinitialisation de mot de passe
@@ -396,9 +430,11 @@ class ResetPasswordREST(http.Controller):
             # message = message.encode('utf-8').decode('utf-8')
             # message = urllib.parse.quote(message.encode('utf-8'))
             try:
+                # Numéro normalisé pour l'envoi (format international)
+                recipient_phone = phone_variants[0] if phone_variants else phone
                 # Créer et envoyer le SMS
                 sms_result = request.env['send.sms'].create({
-                    'recipient': phone,
+                    'recipient': recipient_phone,
                     'message': message,
                 }).send_sms()
 

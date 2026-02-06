@@ -31,7 +31,7 @@
         'views/gestion_magasin_config_views.xml',
         'views/account_move_rental_payment_views.xml',
         'views/invoice_reminder_history_views.xml',
-        'views/rental_menu.xml',
+        # 'views/rental_menu.xml',
         'views/res_partner_view.xml',
         'data/mail_templates.xml'
 

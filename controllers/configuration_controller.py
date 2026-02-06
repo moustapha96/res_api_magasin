@@ -43,6 +43,7 @@ MANY2ONE_KEYS = {
 # Clés sensibles : ne pas exposer la valeur en clair dans l'API
 SENSITIVE_KEYS = {
     'rental.whatsapp_api_token',
+    'rental.wave_api_key',
 }
 
 
@@ -93,12 +94,36 @@ class RentalConfigController(http.Controller):
             )
             for key in all_scalar_keys:
                 raw = config_params.get_param(key)
-               
+                if key in SENSITIVE_KEYS:
+                    config_values[key] = '[CONFIGURED]' if (raw and raw.strip()) else None
+                    continue
                 if key in BOOLEAN_KEYS or key in INTEGER_KEYS or key in FLOAT_KEYS:
                     config_values[key] = _parse_config_value(key, raw)
                 else:
                     config_values[key] = raw or None
 
+            # 2) Champs sensibles uniquement marqués comme configurés
+            for key in SENSITIVE_KEYS:
+                if key not in config_values:
+                    raw = config_params.get_param(key)
+                    config_values[key] = '[CONFIGURED]' if (raw and raw.strip()) else None
+
+            # 3) Many2one : retourner id + display_name
+            for key, model_name in MANY2ONE_KEYS.items():
+                raw = config_params.get_param(key)
+                id_val = None
+                try:
+                    id_val = int(raw) if raw else None
+                except (TypeError, ValueError):
+                    pass
+                if id_val:
+                    rec = request.env[model_name].sudo().browse(id_val).exists()
+                    if rec:
+                        config_values[key] = {'id': rec.id, 'display_name': rec.display_name}
+                    else:
+                        config_values[key] = {'id': id_val, 'display_name': None}
+                else:
+                    config_values[key] = None
 
             return request.make_response(
                 json.dumps(config_values, default=str),

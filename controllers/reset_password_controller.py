@@ -226,7 +226,7 @@ class ResetPasswordREST(http.Controller):
             token = self.generate_token(email)
             # Construire le contenu de l'e-mail
             subject = 'Réinitialiser votre mot de passe'
-            reset_url = f'https://toubasandaga.sn/new-password?mail={partner.email}&token={token}'
+            reset_url = f'https://portail.toubasandaga.sn/new-password?mail={partner.email}&token={token}'
             _logger.info(reset_url)
             # reset_url = f'https://localhost:5173/new-password?mail={partner.email}&token={token}'
             body_html = f'''
@@ -386,11 +386,9 @@ class ResetPasswordREST(http.Controller):
             # Générer un token de réinitialisation de mot de passe
             token = self.generate_token(partner.email)
             # Construire l'URL de réinitialisation
-            # reset_url = f'https://toubasandaga.sn/new-password?mail={partner.email}&token={token}'
-            # reset_url = f'https://localhost:5173/new-password?mail={partner.email}&token={token}'
-
+           
             query_params = {'mail': partner.email, 'token': token}
-            reset_url = f"https://toubasandaga.sn/new-password?{url_encode(query_params)}"
+            reset_url = f"https://portail.toubasandaga.sn/new-password?{url_encode(query_params)}"
 
             reset_url = reset_url.replace("%40", "@")
             # reset_url = reset_url.encode('utf-8').decode('utf-8')
@@ -458,7 +456,7 @@ class ResetPasswordREST(http.Controller):
             token = self.generate_token(email)
             # Construire le contenu de l'e-mail
             subject = 'Réinitialiser votre mot de passe'
-            reset_url = f'https://grh.ccbme.sn/new-password?mail={partner.email}&token={token}'
+            reset_url = f'https://portail.toubasandaga.sn/new-password?mail={partner.email}&token={token}'
             # reset_url = f'http://localhost:3000/new-password?mail={partner.email}&token={token}'
             body_html = f'''
             <table border="0" cellpadding="0" cellspacing="0" style="padding-top: 16px; background-color: #FFFFFF; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;">
@@ -477,7 +475,7 @@ class ResetPasswordREST(http.Controller):
                                                     </span>
                                                 </td>
                                                 <td valign="middle" align="right">
-                                                    <img style="padding: 0px; margin: 0px; height: auto; width: 80px;" src="https://toubasandaga.sn/logo.png" alt="logo Touba Sandaga"/>
+                                                    <img style="padding: 0px; margin: 0px; height: auto; width: 80px;" src="https://portail.toubasandaga.sn/logo.png" alt="logo Touba Sandaga"/>
                                                 </td>
                                             </tr>
                                             <tr>
@@ -541,7 +539,7 @@ class ResetPasswordREST(http.Controller):
                         <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse:separate;">
                             <tr>
                                 <td style="text-align: center; font-size: 13px;">
-                                    Généré par <a target="_blank" href="https://africatransit.sn/" style="color: #2D7DBA;">Touba Sandaga GRH</a>
+                                    Généré par <a target="_blank" href="https://portail.toubasandaga.sn/" style="color: #2D7DBA;">Touba Sandaga GRH</a>
                                 </td>
                             </tr>
                         </table>

@@ -426,7 +426,7 @@ class ResetPasswordREST(http.Controller):
 
             reset_url = reset_url.replace("%40", "@")
             # reset_url = reset_url.encode('utf-8').decode('utf-8')
-            message = f"Bonjour {partner.name}, utilisez ce lien pour réinitialiser votre mot de passe: {reset_url}"
+            message = f"Bonjour {partner.name}, utilisez ce lien pour réinitialiser votre mot de passe: {reset_url} \n Touba Sandaga"
             # message = message.encode('utf-8').decode('utf-8')
             # message = urllib.parse.quote(message.encode('utf-8'))
             try:

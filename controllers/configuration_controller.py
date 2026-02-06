@@ -1,55 +1,107 @@
 # -*- coding: utf-8 -*-
 from odoo import http
-from odoo.http import request, Response
+from odoo.http import request
 import json
+
+# Clés booléennes (config_parameter -> type)
+BOOLEAN_KEYS = {
+    'rental.auto_generate_invoices',
+    'rental.auto_send_invoices',
+    'rental.send_email',
+    'rental.send_sms',
+    'rental.send_whatsapp',
+    'rental.auto_send_reminders',
+    'rental.enable_wave',
+    'rental.enable_orange_money',
+    'rental.enable_stripe',
+    'rental.allow_partial_payment',
+    'rental.late_fee_enabled',
+}
+
+# Clés entières
+INTEGER_KEYS = {
+    'rental.invoice_days_before',
+    'rental.reminder_frequency_days',
+    'rental.max_reminders',
+    'rental.grace_period_days',
+}
+
+# Clés décimales
+FLOAT_KEYS = {
+    'rental.late_fee_percentage',
+}
+
+# Clés Many2one (config stocke l'ID) -> on retourne id + display_name si dispo
+MANY2ONE_KEYS = {
+    'rental.email_template_id': 'mail.template',
+    'rental.reminder_email_template_id': 'mail.template',
+    'rental.income_account_id': 'account.account',
+    'rental.deposit_account_id': 'account.account',
+    'rental.payment_journal_id': 'account.journal',
+}
+
+# Clés sensibles : ne pas exposer la valeur en clair dans l'API
+SENSITIVE_KEYS = {
+    'rental.whatsapp_api_token',
+}
+
+
+def _parse_config_value(key, value):
+    """Convertit une valeur ir.config_parameter (string) vers le type attendu."""
+    if value is None or value == '':
+        if key in BOOLEAN_KEYS:
+            return False
+        if key in INTEGER_KEYS:
+            return 0
+        if key in FLOAT_KEYS:
+            return 0.0
+        return None
+    if key in BOOLEAN_KEYS:
+        return value in ('True', 'true', '1', True)
+    if key in INTEGER_KEYS:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+    if key in FLOAT_KEYS:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+    return value
+
 
 class RentalConfigController(http.Controller):
 
     @http.route('/api/rental/config', type="http", auth="none", methods=["GET"], cors="*", csrf=False)
     def get_rental_config(self, **kwargs):
         """
-        Récupère les paramètres de configuration pour la gestion des locations.
+        Récupère les paramètres de configuration pour la gestion des locations
+        (alignés sur res.config.settings / ResConfigSettings).
         Retourne un dictionnaire JSON avec les valeurs actuelles.
+        Les secrets (tokens, clés API) sont masqués.
         """
         try:
-            # Récupérer les paramètres depuis IrConfigParameter
             config_params = request.env['ir.config_parameter'].sudo()
-            # Liste des clés de configuration à récupérer
-            config_keys = [
-                'rental.auto_generate_invoices',
-                'rental.invoice_days_before',
-                'rental.auto_send_invoices',
-                'rental.send_email',
-                'rental.send_sms',
-                'rental.send_whatsapp',
-                'rental.auto_send_reminders',
-                'rental.reminder_frequency_days',
-                'rental.max_reminders',
-                'rental.enable_wave',
-                'rental.enable_orange_money',
-                'rental.enable_stripe',
-                'rental.allow_partial_payment',
-                'rental.late_fee_enabled',
-                'rental.late_fee_percentage',
-                'rental.grace_period_days',
-            ]
-
-            # Récupérer les valeurs
             config_values = {}
-            for key in config_keys:
-                value = config_params.get_param(key, default=False)
-                # Convertir les valeurs en type approprié (booléen, entier, etc.)
-                if key in ['rental.auto_generate_invoices', 'rental.auto_send_invoices', 'rental.send_email', 'rental.send_sms', 'rental.send_whatsapp', 'rental.auto_send_reminders', 'rental.enable_wave', 'rental.enable_orange_money', 'rental.enable_stripe', 'rental.allow_partial_payment', 'rental.late_fee_enabled']:
-                    value = value == 'True' or value is True
-                elif key in ['rental.invoice_days_before', 'rental.reminder_frequency_days', 'rental.max_reminders', 'rental.grace_period_days']:
-                    value = int(value) if value else 0
-                elif key in ['rental.late_fee_percentage']:
-                    value = float(value) if value else 0.0
-                config_values[key] = value
 
-            # Retourner les valeurs au format JSON
+            # 1) Paramètres scalaires (bool, int, float, char, selection)
+            all_scalar_keys = (
+                list(BOOLEAN_KEYS) + list(INTEGER_KEYS) + list(FLOAT_KEYS) + [
+                    'rental.sms_provider',
+                ]
+            )
+            for key in all_scalar_keys:
+                raw = config_params.get_param(key)
+               
+                if key in BOOLEAN_KEYS or key in INTEGER_KEYS or key in FLOAT_KEYS:
+                    config_values[key] = _parse_config_value(key, raw)
+                else:
+                    config_values[key] = raw or None
+
+
             return request.make_response(
-                json.dumps(config_values),
+                json.dumps(config_values, default=str),
                 headers=[('Content-Type', 'application/json')]
             )
 
